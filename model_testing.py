@@ -29,7 +29,7 @@ X_train, X_test, y_train, y_test = train_test_split(features, label, test_size=0
 
 # model setup
 clfs = (
-    SVC(kernel='linear', C=1, gamma='scale', random_state=42),
+    SVC(kernel='linear', C=1, gamma='scale', random_state=42, probability=True),
     LogisticRegression(solver='liblinear', random_state=42),
     RandomForestClassifier(n_estimators= 100, min_samples_split=2, min_samples_leaf=1, random_state=42),
     KNeighborsClassifier(p=3, n_neighbors=5)
@@ -45,9 +45,10 @@ for clf in clfs:
 # simple model class
 
 class Clf():
-    def __init__(self, name, y_pred, acc, bal_acc, prc, lgl, rcl, f1, auc):
+    def __init__(self, name, y_pred, y_proba, acc, bal_acc, prc, lgl, rcl, f1, auc):
         self.name = name
         self.y_pred = y_pred
+        self.y_proba = y_proba
         self.acc_score = acc
         self.acc_bal_score = bal_acc
         self.prc_score = prc
@@ -62,6 +63,7 @@ scores = []
 # model testing
 for clf in clfs:
     y_pred = clf.predict(X_test)
+    y_proba = clf.predict_proba(X_test)[:,1]
 
     # scores
     acc_score = accuracy_score(y_test, y_pred)
@@ -72,7 +74,7 @@ for clf in clfs:
     f_score = f1_score(y_test, y_pred)
     au_roc = roc_auc_score(y_test, y_pred)
 
-    clf_scores.append(Clf(type(clf).__name__, y_pred, acc_score, acc_bal_score, prc_score, lgl_score, rcl_score, f_score, au_roc))
+    clf_scores.append(Clf(type(clf).__name__, y_pred, y_proba, acc_score, acc_bal_score, prc_score, lgl_score, rcl_score, f_score, au_roc))
     scores.append([acc_score, prc_score, rcl_score, f_score, au_roc])
 
     print(f"model: {type(clf).__name__}")
@@ -121,7 +123,8 @@ if visualize:
     # figure 3 | ROC curve
     plt.figure(3)
     for pred in clf_scores:
-        fpr, tpr, thresholds = roc_curve(y_test, pred.y_pred)
+        print(pred.y_proba)
+        fpr, tpr, thresholds = roc_curve(y_test, pred.y_proba)
         plt.plot(fpr, tpr, label = pred.name % pred.auc_roc)
 
     plt.plot([0,1],[0,1], 'k--')
@@ -188,4 +191,4 @@ for scores in clf_scores:
     model_df.loc[len(model_df)] = [scores.name, scores.acc_score, scores.acc_bal_score, scores.prc_score, scores.recl_score, scores.f_score, scores.auc_roc, scores.lgl_score]
 
 # model accuracy csv file
-model_df.to_csv('output/accuracy-output-2.csv')
+model_df.to_csv('output/accuracy-output-1.csv')
